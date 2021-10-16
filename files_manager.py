@@ -178,9 +178,8 @@ def check_transform_timestamp(timestamp: str) -> float:
             date_time = datetime.datetime(YYYY, MM, DD)
             unix_timestamp = time.mktime(date_time.timetuple())
     except:
-        print("Incorrect timestamp format, must be DD_MM_YYYY or DD_MM_YYYY:hh_mm_ss.\nWas: %s" % (
+        raise ValueError("Incorrect timestamp format, must be DD_MM_YYYY or DD_MM_YYYY:hh_mm_ss.\nWas: %s" % (
             timestamp))
-        raise ValueError
     # adjust to local time
     return unix_timestamp + (time.mktime(datetime.datetime.now().timetuple()) - time.mktime(datetime.datetime.utcnow().timetuple()))
 
