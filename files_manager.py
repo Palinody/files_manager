@@ -148,7 +148,7 @@ def check_transform_timestamp(timestamp:str) -> float:
     Checks and transforms timestamp to unix time format.
     valid formats:
     - "DD_MM_YYYY"
-    - "DD_MM_YYYY:HH_MM_SS"\n
+    - "DD_MM_YYYY:hh_mm_ss"\n
     If valid, transforms to unix.
     """
     unix_timestamp:float=None
@@ -202,21 +202,12 @@ def filter_check_return(filter:List[str]) -> List[str]:
             <lt | gt> <DD_MM_YYYY | DD_MM_YYYY:HH_MM_SS>"""
     return filter
 
-"""
-- os.remove() removes a file.
-- os.rmdir() removes an empty directory.
-- shutil.rmtree() deletes a directory and all its contents.
-python3.4+
-- pathlib.Path.unlink() removes a file or symbolic link.
-- pathlib.Path.rmdir() removes an empty directory.
-"""
 def remove_files(tree:Dict[str, List[Tuple[int, float, str]]]) -> None:
     for dirpath, values in tree.items():
         for file_info in values:
             os.remove(os.path.join(dirpath, file_info[2])) 
 
 def main():
-    # python3 ros_bag_purge.py --root /home/$USER/test_workspace/test_directory -r --verbose --filter lt 09_03_2021:16_46_00 --sort date --remove
     # Don't take script name
     args = sys.argv[1:]
     # Parser instance
@@ -259,7 +250,5 @@ def main():
     
     if args.remove:
         remove_files(tree)
-
-    print(args)
 if __name__ == "__main__":
     main()
