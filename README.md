@@ -1,3 +1,10 @@
+# TODO
+- Move the parsed files to dest
+`--move <dest>`
+- Prune all the empty directories
+`--prune`
+
+# Tutorial
 - Example directories tree
 ```bash
 <root directory>
