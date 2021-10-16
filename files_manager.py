@@ -17,7 +17,7 @@ def file_info_generator(file_paths: List[str], dirpath: str = "") -> Tuple[int, 
     for fn in file_paths:
         # get full path of file
         file_path: str = os.path.join(dirpath, fn)
-        # get size in kilobytes
+        # get size in bytes
         file_size: int = os.path.getsize(file_path)
         file_creation_date: float = os.path.getmtime(file_path)
         yield file_size, file_creation_date, fn
@@ -118,7 +118,7 @@ def print_tree(tree: Dict[str, List[Tuple[int, float, str]]], pretty_formatter: 
     The keys are printed before each file_info chunk and we add a tab before each entry of the latter.
     """
     for key, values in tree.items():
-        #  ignore empty lists
+        # skip empty folders
         if not values:
             continue
         print("Path: ", key)
@@ -145,11 +145,9 @@ def print_tree_with_sorting_args(tree: Dict[str, List[Tuple[int, float, str]]], 
         print(header)
         if sorting_rule == "size":
             for file_info in sorted(make_list_from_tree(tree), key=lambda x: x[0]):
-                # print("{:15,d}".format(format_file_info(file_info)[0]) + " %s %s"%format_file_info(file_info)[1:])
                 print(pretty_formatter % (format_file_info(file_info)))
         elif sorting_rule == "rSize":
             for file_info in sorted(make_list_from_tree(tree), key=lambda x: x[0], reverse=True):
-                # print("{:15,d}".format(format_file_info(file_info)[0]) + " %s %s"%format_file_info(file_info)[1:])
                 print(pretty_formatter % (format_file_info(file_info)))
         elif sorting_rule == "date":
             for file_info in sorted(make_list_from_tree(tree), key=lambda x: x[1]):
@@ -239,7 +237,6 @@ def main():
         "--root", nargs="?", help="Root directory from which we enable purge. This option is required.", required=True)
     parser.add_argument("--recursion", "-r",
                         action="store_true", help="Recursion option.")
-    # parser.add_argument("--depth", nargs="?", type=int, help="Recursion depth. If recursion is specified and depth is not, all the nodes will be traversed.")
     parser.add_argument("--filter", "-f", nargs="+", help="""
         Catches files with specified attributes (size or date).
         """)
