@@ -66,7 +66,7 @@ def make_tree(root: str, filter: List[str], recursion: bool = True) -> Dict[str,
         # If a filter is provided
         if filter:
             # check if it's a file size comparator filter
-            if is_size_filer(filter):
+            if is_size_filter(filter):
                 tree[dirpath] = [(size, timestamp, fn) for size, timestamp, fn in file_info_generator(
                     filenames, dirpath=dirpath) if filter_size_to_logic(size, filter)]
             # or a timestamp comparator filter
@@ -187,7 +187,7 @@ def check_transform_timestamp(timestamp: str) -> float:
     return unix_timestamp + (time.mktime(datetime.datetime.now().timetuple()) - time.mktime(datetime.datetime.utcnow().timetuple()))
 
 
-def is_size_filer(filter: List[str]) -> bool:
+def is_size_filter(filter: List[str]) -> bool:
     """
     Checks the size file size.
     lt, gt = less, greater than.
@@ -216,7 +216,7 @@ def filter_check_return(filter: List[str]) -> List[str]:
     """
     Checks and returns the same filter if success.
     """
-    assert is_size_filer(filter) or is_timestamp_filter(filter), \
+    assert is_size_filter(filter) or is_timestamp_filter(filter), \
         """Assertion failed, --filter option must be one of the following:
             <lt | gt> <integer> <G | M | T>
             <lt | gt> <DD_MM_YYYY | DD_MM_YYYY:HH_MM_SS>"""
