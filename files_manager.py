@@ -23,22 +23,22 @@ def file_info_generator(file_paths: List[str], dirpath: str = "") -> Tuple[int, 
         yield file_size, file_creation_date, fn
 
 
-def filter_size_to_logic(value: int, filter: Tuple[str, str, str]) -> bool:
-    filter_value: int = int(filter[1])
+def filter_size_to_logic(size: int, filter: Tuple[str, str, str]) -> bool:
+    filter_size: int = int(filter[1])
     if filter[0] == "lt":
         if filter[2] == 'G':
-            return (value < filter_value * 1e9)
+            return (size < filter_size * 1e9)
         elif filter[2] == 'M':
-            return (value < filter_value * 1e6)
+            return (size < filter_size * 1e6)
         elif filter[2] == 'K':
-            return (value < filter_value * 1e3)
+            return (size < filter_size * 1e3)
     elif filter[0] == "gt":
         if filter[2] == 'G':
-            return (value > filter_value * 1e9)
+            return (size > filter_size * 1e9)
         elif filter[2] == 'M':
-            return (value > filter_value * 1e6)
+            return (size > filter_size * 1e6)
         elif filter[2] == 'K':
-            return (value > filter_value * 1e3)
+            return (size > filter_size * 1e3)
     else:
         raise ValueError
 
@@ -112,11 +112,13 @@ def format_file_info(file_info: Tuple[int, float, str]) -> Tuple[str, str, str]:
             file_info[2])
 
 
-def print_tree(tree: Dict[str, List[Tuple[int, float, str]]], pretty_formatter: str, header: str = "") -> None:
+def print_tree(tree: Dict[str, List[Tuple[int, float, str]]]) -> None:
     """
     Simply iterates over the keys (folder_path) and prints the values (file_info) line by line.
     The keys are printed before each file_info chunk and we add a tab before each entry of the latter.
     """
+    header: str = "%s %8s %10s %8s" % ("SIZE (byte)", "DATE", "TIME", "NAME")
+    pretty_formatter: str = '%-15s %s %s'
     for key, values in tree.items():
         # skip empty folders
         if not values:
@@ -137,11 +139,12 @@ def print_tree_with_sorting_args(tree: Dict[str, List[Tuple[int, float, str]]], 
 
     The lambdas specify w.r.t. which file_info entry we should sort.
     """
-    header: str = "%s %8s %10s %8s" % ("SIZE (byte)", "DATE", "TIME", "PATH")
-    pretty_formatter: str = '%-15s %s %s'
     if not sorting_rule:
-        print_tree(tree, pretty_formatter, header)
+        print_tree(tree)
     else:
+        header: str = "%s %8s %10s %8s" % (
+            "SIZE (byte)", "DATE", "TIME", "PATH")
+        pretty_formatter: str = '%-15s %s %s'
         print(header)
         if sorting_rule == "size":
             for file_info in sorted(make_list_from_tree(tree), key=lambda x: x[0]):
@@ -186,7 +189,7 @@ def check_transform_timestamp(timestamp: str) -> float:
 
 def is_size_filter(filter: List[str]) -> bool:
     """
-    Checks the size file size.
+    Checks if the input filter is a file size filter.
     lt, gt = less, greater than.
     """
     if len(filter) == 3 \
@@ -199,7 +202,7 @@ def is_size_filter(filter: List[str]) -> bool:
 
 def is_timestamp_filter(filter: List[str]) -> bool:
     """
-    Checks timestamp filter.
+    Checks if the input filter is a timestamp filter.
     lt, gt = less, greater than.
     """
     if len(filter) == 2 \
@@ -259,6 +262,16 @@ def main():
     # TODO: --move <dest>
     # Prune all the empty directories
     # TODO: --prune
+    # make better filters
+    # TODO:
+    # --filter <timestamp> < timestamp < <timestamp>
+    # --filter timestamp < <timestamp>
+    # --filter timestamp > <timestamp>
+    # --filter <size> < size < <size>
+    # --filter size < <size>
+    # --filter size > <size>
+
+    # TODO: make action options ask if sure. Add -y option
 
     args = parser.parse_args(args)
     # Constructs a tree based on the arguments: make_tree(where, parsing filter, recursion?)

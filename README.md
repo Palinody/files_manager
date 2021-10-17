@@ -1,11 +1,28 @@
 # TODO
-- Move the parsed files to dest
+- Move the parsed files to dest (with keep structure option?)
+
 `--move <dest>`
-- Prune all the empty directories
+- Prune all the empty directories. If `--move` option enabled, move before prune in case the destination folder is empty and within the scope of `--prune` targets. 
+
 `--prune`
+- make better filters
+
+`--filter <timestamp> < timestamp < <timestamp>`
+
+`--filter timestamp < <timestamp>`
+
+`--filter timestamp > <timestamp>`
+
+`--filter <size> < size <G|M|K|B> < <size>`
+
+`--filter size <G|M|K|B> < <size>`
+
+`--filter size <G|M|K|B> > <size>`
+
+- make action options trigger confirmation prompt. Add `-y` option.
 
 # Tutorial
-- Example directories tree
+- Directory tree example
 ```bash
 <root directory>
 ├── empty_dir
