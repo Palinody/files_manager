@@ -179,11 +179,11 @@ Timestamp filtering: `<comparator> <timestamp>`
 
 `file size unit`: "G" or "M" or "K" meaning gigabyte, megabyte and kilobyte respectively
 
-`timestamp`: "DD_MM_YYYY" or "DD_MM_YYYY:hh_mm_ss"
+`timestamp`: "DD-MM-YYYY" or "DD-MM-YYYY:hh-mm-ss"
 
 Example
 ```bash
-python3 files_manager.py --root /path/to/root/directory -V -r --sort date --filter gt 21_05_2021:13_44_18
+python3 files_manager.py --root /path/to/root/directory -V -r --sort date --filter gt 21-05-2021:13-44-18
 ```
 The above tree becomes:
 ```bash

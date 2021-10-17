@@ -7,7 +7,7 @@ import argparse
 import sys
 import os
 
-from typing import Tuple, List, Dict, Any
+from typing import Counter, Tuple, List, Dict, Any
 
 
 def file_info_generator(file_paths: List[str], dirpath: str = "") -> Tuple[int, float, str]:
@@ -53,7 +53,7 @@ def filter_timestamp_to_logic(timestamp: float, filter: Tuple[str, str]) -> bool
         raise ValueError
 
 
-def make_tree(root: str, filter: List[str], recursion: bool = True) -> Dict[str, List[Tuple[int, float, str]]]:
+def make_tree(root: str, filter: List[str], recursion: bool = True, isFile: bool = True) -> Dict[str, List[Tuple[int, float, str]]]:
     """
     Makes a dict(keys : values)
     keys: the directory full path
@@ -91,10 +91,8 @@ def make_list_from_tree(tree: Dict[str, List[Tuple[Any, Any, str]]]) -> List[Tup
     """
     files_list: List[Tuple[Any, Any, str]] = []
     for keys, values in tree.items():
-        # skip empty folders
-        if values:
-            files_list += [(size, date, os.path.join(keys, fn))
-                           for size, date, fn in values]
+        files_list += [(size, date, os.path.join(keys, fn))
+                       for size, date, fn in values]
     return files_list
 
 
@@ -120,9 +118,6 @@ def print_tree(tree: Dict[str, List[Tuple[int, float, str]]]) -> None:
     header: str = "%s %8s %10s %8s" % ("SIZE (byte)", "DATE", "TIME", "NAME")
     pretty_formatter: str = '%-15s %s %s'
     for key, values in tree.items():
-        # skip empty folders
-        if not values:
-            continue
         print("Path: ", key)
         print("\t", header)
         for file_info in values:
@@ -164,24 +159,24 @@ def check_transform_timestamp(timestamp: str) -> float:
     """
     Checks and transforms timestamp to unix time format.
     valid formats:
-    - "DD_MM_YYYY"
-    - "DD_MM_YYYY:hh_mm_ss"\n
+    - "DD-MM-YYYY"
+    - "DD-MM-YYYY:hh-mm-ss"\n
     If valid, transforms to unix.
     """
     unix_timestamp: float = None
     try:
         try:
             date, time_ = timestamp.split(':')
-            DD, MM, YYYY = tuple(int(x) for x in date.split("_"))
-            hh, mm, ss = tuple(int(x) for x in time_.split("_"))
+            DD, MM, YYYY = tuple(int(x) for x in date.split("-"))
+            hh, mm, ss = tuple(int(x) for x in time_.split("-"))
             date_time = datetime.datetime(YYYY, MM, DD, hh, mm, ss)
             unix_timestamp = time.mktime(date_time.timetuple())
         except:
-            DD, MM, YYYY = tuple(int(x) for x in timestamp.split("_"))
+            DD, MM, YYYY = tuple(int(x) for x in timestamp.split("-"))
             date_time = datetime.datetime(YYYY, MM, DD)
             unix_timestamp = time.mktime(date_time.timetuple())
     except:
-        raise ValueError("Incorrect timestamp format, must be DD_MM_YYYY or DD_MM_YYYY:hh_mm_ss.\nWas: %s" % (
+        raise ValueError("Incorrect timestamp format, must be DD-MM-YYYY or DD-MM-YYYY:hh-mm-ss.\nWas: %s" % (
             timestamp))
     # adjust to local time
     return unix_timestamp + (time.mktime(datetime.datetime.now().timetuple()) - time.mktime(datetime.datetime.utcnow().timetuple()))
@@ -219,19 +214,56 @@ def filter_check_return(filter: List[str]) -> List[str]:
     assert is_size_filter(filter) or is_timestamp_filter(filter), \
         """Assertion failed, --filter option must be one of the following:
             <lt | gt> <integer> <G | M | T>
-            <lt | gt> <DD_MM_YYYY | DD_MM_YYYY:HH_MM_SS>"""
+            <lt | gt> <DD-MM-YYYY | DD-MM-YYYY:hh-mm-ss>"""
     return filter
 
 
-def remove_files(tree: Dict[str, List[Tuple[Any, Any, str]]]) -> None:
+def remove_files(tree: Dict[str, List[Tuple[Any, Any, str]]], bypass: bool = True) -> None:
+    """
+    TODO: make trigger confirmation prompt and bypass with -y
+    """
     for dirpath, values in tree.items():
         for file_info in values:
             os.remove(os.path.join(dirpath, file_info[2]))
 
 
-def main():
-    # Don't take script name
-    args = sys.argv[1:]
+def prune_empty_folders(tree: Dict[str, List[Tuple[Any, Any, str]]], bypass: bool = True) -> None:
+    """
+    Checks if folder contains files but it doesnt mean that its empty 
+    if it contains only a folder and no file. Maybe check if content 
+    at <path> contains <dir> of <file>. But then if <dir> at path is 
+    empty it might not prune it unless theres a second pass...
+
+    TODO: !!! The function currently prints what it would delete since the it is not finished !!!
+    """
+    if bypass:
+        for dirpath, values in tree.items():
+            # if empty dir
+            if not values:
+                print(dirpath)
+                # os.rmdir(dirpath)
+    else:
+        dir_count: int = 0
+        dir_list: List[str] = []
+        for dirpath, values in tree.items():
+            # increment counter if folder is empty
+            if not values:
+                dir_count += 1
+                dir_list.append(dirpath)
+        print("You are about to prune %d empty folders. Continue? (y|n)" %
+              dir_count)
+        for line in sys.stdin:
+            for answer in line.split():
+                if answer == 'y':
+                    for dirpath in dir_list:
+                        print(dirpath)
+                        # os.rmdir(dirpath)
+                    return
+                else:
+                    return
+
+
+def make_parser() -> argparse.ArgumentParser:
     # Parser instance
     parser = argparse.ArgumentParser("Purge files from a root directory.")
 
@@ -242,10 +274,14 @@ def main():
     parser.add_argument("--filter", "-f", nargs="+", help="""
         Catches files with specified attributes (size or date).
         """)
-
+    # START: actions
     parser.add_argument("--remove", action="store_true",
-                        help="Will remove all the files based on the tree that has been constructed.")
-
+                        help="Remove all the files that have been parsed in the tree.")
+    parser.add_argument("--prune", action="store_true",
+                        help="Remove all empty folders that have been parsed in the tree.")
+    parser.add_argument("--yes", "-y", action="store_true",
+                        help="Bypass confirmation prompt triggered by actions.")
+    # END: ections
     parser.add_argument("--verbose", "-V", action="store_true",
                         help="Shows which files have been selected from the chosen root dir.")
     parser.add_argument("--sort", choices=["size", "rSize", "date", "rDate"],
@@ -258,6 +294,32 @@ def main():
         "date": sort by increasing date
         "rDate": sort by decreasing date
         """)
+    return parser
+
+
+def main():
+    # Don't take script name
+    args = sys.argv[1:]
+
+    parser = make_parser()
+    args = parser.parse_args(args)
+    # Constructs a tree based on the arguments: make_tree(where, parsing filter, recursion?)
+    tree = make_tree(
+        args.root,
+        filter_check_return(args.filter) if args.filter else None,
+        args.recursion)
+    # Prints it to console if verbose is True with the specified sorting rules
+    if args.verbose:
+        print_tree_with_sorting_args(tree, args.sort)
+
+    if args.remove:
+        remove_files(tree, args.yes)
+
+    if args.prune:
+        prune_empty_folders(tree, args.yes)
+
+
+if __name__ == "__main__":
     # Move the files in tree to dest
     # TODO: --move <dest>
     # Prune all the empty directories
@@ -270,22 +332,5 @@ def main():
     # --filter <size> < size < <size>
     # --filter size < <size>
     # --filter size > <size>
-
     # TODO: make action options ask if sure. Add -y option
-
-    args = parser.parse_args(args)
-    # Constructs a tree based on the arguments: make_tree(where, parsing filter, recursion?)
-    tree = make_tree(
-        args.root,
-        filter_check_return(args.filter) if args.filter else None,
-        args.recursion)
-    # Prints it to console if verbose is True with the specified sorting rules
-    if args.verbose:
-        print_tree_with_sorting_args(tree, args.sort)
-
-    if args.remove:
-        remove_files(tree)
-
-
-if __name__ == "__main__":
     main()
